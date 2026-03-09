@@ -1,310 +1,125 @@
-"""Customizing chart configuration defaults."""
+"""Tools for enabling and registering chart themes."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from typing import overload as _overload
+from typing import TYPE_CHECKING, Any, Final, Literal, get_args
 
-from altair.vegalite.v6.schema._config import (
-    AreaConfigKwds,
-    AutoSizeParamsKwds,
-    AxisConfigKwds,
-    AxisResolveMapKwds,
-    BarConfigKwds,
-    BindCheckboxKwds,
-    BindDirectKwds,
-    BindInputKwds,
-    BindRadioSelectKwds,
-    BindRangeKwds,
-    BoxPlotConfigKwds,
-    BrushConfigKwds,
-    CompositionConfigKwds,
-    ConfigKwds,
-    DateTimeKwds,
-    DerivedStreamKwds,
-    ErrorBandConfigKwds,
-    ErrorBarConfigKwds,
-    FeatureGeometryGeoJsonPropertiesKwds,
-    FormatConfigKwds,
-    GeoJsonFeatureCollectionKwds,
-    GeoJsonFeatureKwds,
-    GeometryCollectionKwds,
-    GradientStopKwds,
-    HeaderConfigKwds,
-    IntervalSelectionConfigKwds,
-    IntervalSelectionConfigWithoutTypeKwds,
-    LegendConfigKwds,
-    LegendResolveMapKwds,
-    LegendStreamBindingKwds,
-    LinearGradientKwds,
-    LineConfigKwds,
-    LineStringKwds,
-    LocaleKwds,
-    MarkConfigKwds,
-    MergedStreamKwds,
-    MultiLineStringKwds,
-    MultiPointKwds,
-    MultiPolygonKwds,
-    NumberLocaleKwds,
-    OverlayMarkDefKwds,
-    PaddingKwds,
-    PointKwds,
-    PointSelectionConfigKwds,
-    PointSelectionConfigWithoutTypeKwds,
-    PolygonKwds,
-    ProjectionConfigKwds,
-    ProjectionKwds,
-    RadialGradientKwds,
-    RangeConfigKwds,
-    RectConfigKwds,
-    ResolveKwds,
-    RowColKwds,
-    ScaleConfigKwds,
-    ScaleInvalidDataConfigKwds,
-    ScaleResolveMapKwds,
-    SelectionConfigKwds,
-    StepKwds,
-    StyleConfigIndexKwds,
-    ThemeConfig,
-    TickConfigKwds,
-    TimeIntervalStepKwds,
-    TimeLocaleKwds,
-    TitleConfigKwds,
-    TitleParamsKwds,
-    TooltipContentKwds,
-    TopLevelSelectionParameterKwds,
-    VariableParameterKwds,
-    ViewBackgroundKwds,
-    ViewConfigKwds,
-)
-from altair.vegalite.v6.theme import themes as _themes
+from altair.utils.deprecation import deprecated_static_only
+from altair.utils.plugin_registry import Plugin, PluginRegistry
+from altair.vegalite.v6.schema._config import ThemeConfig
+from altair.vegalite.v6.schema._typing import VegaThemes
 
 if TYPE_CHECKING:
     import sys
-    from collections.abc import Callable
-    from typing import Any, Literal
+    from functools import partial
 
     if sys.version_info >= (3, 11):
         from typing import LiteralString
     else:
         from typing_extensions import LiteralString
-    from altair.utils.plugin_registry import Plugin
-
-
-__all__ = [
-    "AreaConfigKwds",
-    "AutoSizeParamsKwds",
-    "AxisConfigKwds",
-    "AxisResolveMapKwds",
-    "BarConfigKwds",
-    "BindCheckboxKwds",
-    "BindDirectKwds",
-    "BindInputKwds",
-    "BindRadioSelectKwds",
-    "BindRangeKwds",
-    "BoxPlotConfigKwds",
-    "BrushConfigKwds",
-    "CompositionConfigKwds",
-    "ConfigKwds",
-    "DateTimeKwds",
-    "DerivedStreamKwds",
-    "ErrorBandConfigKwds",
-    "ErrorBarConfigKwds",
-    "FeatureGeometryGeoJsonPropertiesKwds",
-    "FormatConfigKwds",
-    "GeoJsonFeatureCollectionKwds",
-    "GeoJsonFeatureKwds",
-    "GeometryCollectionKwds",
-    "GradientStopKwds",
-    "HeaderConfigKwds",
-    "IntervalSelectionConfigKwds",
-    "IntervalSelectionConfigWithoutTypeKwds",
-    "LegendConfigKwds",
-    "LegendResolveMapKwds",
-    "LegendStreamBindingKwds",
-    "LineConfigKwds",
-    "LineStringKwds",
-    "LinearGradientKwds",
-    "LocaleKwds",
-    "MarkConfigKwds",
-    "MergedStreamKwds",
-    "MultiLineStringKwds",
-    "MultiPointKwds",
-    "MultiPolygonKwds",
-    "NumberLocaleKwds",
-    "OverlayMarkDefKwds",
-    "PaddingKwds",
-    "PointKwds",
-    "PointSelectionConfigKwds",
-    "PointSelectionConfigWithoutTypeKwds",
-    "PolygonKwds",
-    "ProjectionConfigKwds",
-    "ProjectionKwds",
-    "RadialGradientKwds",
-    "RangeConfigKwds",
-    "RectConfigKwds",
-    "ResolveKwds",
-    "RowColKwds",
-    "ScaleConfigKwds",
-    "ScaleInvalidDataConfigKwds",
-    "ScaleResolveMapKwds",
-    "SelectionConfigKwds",
-    "StepKwds",
-    "StyleConfigIndexKwds",
-    "ThemeConfig",
-    "TickConfigKwds",
-    "TimeIntervalStepKwds",
-    "TimeLocaleKwds",
-    "TitleConfigKwds",
-    "TitleParamsKwds",
-    "TooltipContentKwds",
-    "TopLevelSelectionParameterKwds",
-    "VariableParameterKwds",
-    "ViewBackgroundKwds",
-    "ViewConfigKwds",
-    "active",
-    "enable",
-    "get",
-    "names",
-    "options",
-    "register",
-    "unregister",
-]
-
-
-def register(
-    name: LiteralString, *, enable: bool
-) -> Callable[[Plugin[ThemeConfig]], Plugin[ThemeConfig]]:
-    """
-    Decorator for registering a theme function.
-
-    Parameters
-    ----------
-    name
-        Unique name assigned in registry.
-    enable
-        Auto-enable the wrapped theme.
-
-    Examples
-    --------
-    Register and enable a theme::
-
-        import altair as alt
-        from altair import theme
-
-
-        @theme.register("param_font_size", enable=True)
-        def custom_theme() -> theme.ThemeConfig:
-            sizes = 12, 14, 16, 18, 20
-            return {
-                "autosize": {"contains": "content", "resize": True},
-                "background": "#F3F2F1",
-                "config": {
-                    "axisX": {"labelFontSize": sizes[1], "titleFontSize": sizes[1]},
-                    "axisY": {"labelFontSize": sizes[1], "titleFontSize": sizes[1]},
-                    "font": "'Lato', 'Segoe UI', Tahoma, Verdana, sans-serif",
-                    "headerColumn": {"labelFontSize": sizes[1]},
-                    "headerFacet": {"labelFontSize": sizes[1]},
-                    "headerRow": {"labelFontSize": sizes[1]},
-                    "legend": {"labelFontSize": sizes[0], "titleFontSize": sizes[1]},
-                    "text": {"fontSize": sizes[0]},
-                    "title": {"fontSize": sizes[-1]},
-                },
-                "height": {"step": 28},
-                "width": 350,
-            }
-
-    We can then see the ``name`` parameter displayed when checking::
-
-        theme.active
-        "param_font_size"
-
-    Until another theme has been enabled, all charts will use defaults set in ``custom_theme()``::
-
-        from altair.datasets import data
-
-        source = data.stocks()
-        lines = (
-            alt.Chart(source, title=alt.Title("Stocks"))
-            .mark_line()
-            .encode(x="date:T", y="price:Q", color="symbol:N")
-        )
-        lines.interactive(bind_y=False)
-
-    """
-
-    # HACK: See for `LiteralString` requirement in `name`
-    # https://github.com/vega/altair/pull/3526#discussion_r1743350127
-    def decorate(func: Plugin[ThemeConfig], /) -> Plugin[ThemeConfig]:
-        _register(name, func)
-        if enable:
-            _themes.enable(name)
-        return func
-
-    return decorate
-
-
-def unregister(name: LiteralString) -> Plugin[ThemeConfig]:
-    """
-    Remove and return a previously registered theme.
-
-    Parameters
-    ----------
-    name
-        Unique name assigned during ``alt.theme.register``.
-
-    Raises
-    ------
-    TypeError
-        When ``name`` has not been registered.
-    """
-    plugin = _register(name, None)
-    if plugin is None:
-        msg = (
-            f"Found no theme named {name!r} in registry.\n"
-            f"Registered themes:\n"
-            f"{names()!r}"
-        )
-        raise TypeError(msg)
+    if sys.version_info >= (3, 10):
+        from typing import TypeAlias
     else:
-        return plugin
+        from typing_extensions import TypeAlias
+
+    from altair.utils.plugin_registry import PluginEnabler
 
 
-enable = _themes.enable
-get = _themes.get
-names = _themes.names
-active: str
-"""Return the name of the currently active theme."""
-options: dict[str, Any]
-"""Return the current themes options dictionary."""
+AltairThemes: TypeAlias = Literal["default", "opaque"]
+VEGA_THEMES: list[LiteralString] = list(get_args(VegaThemes))
 
 
-def __dir__() -> list[str]:
-    return __all__
+# HACK: See for `LiteralString` requirement in `name`
+# https://github.com/vega/altair/pull/3526#discussion_r1743350127
+class ThemeRegistry(PluginRegistry[Plugin[ThemeConfig], ThemeConfig]):
+    def enable(
+        self,
+        name: LiteralString | AltairThemes | VegaThemes | None = None,
+        **options: Any,
+    ) -> PluginEnabler[Plugin[ThemeConfig], ThemeConfig]:
+        """
+        Enable a theme by name.
+
+        This can be either called directly, or used as a context manager.
+
+        Parameters
+        ----------
+        name : string (optional)
+            The name of the theme to enable. If not specified, then use the
+            current active name.
+        **options :
+            Any additional parameters will be passed to the theme as keyword
+            arguments
+
+        Returns
+        -------
+        PluginEnabler:
+            An object that allows enable() to be used as a context manager
+
+        Notes
+        -----
+        Default `vega` themes can be previewed at https://vega.github.io/vega-themes/
+        """
+        return super().enable(name, **options)
+
+    def get(self) -> partial[ThemeConfig] | Plugin[ThemeConfig] | None:
+        """Return the currently active theme."""
+        return super().get()
+
+    def names(self) -> list[str]:
+        """Return the names of the registered and entry points themes."""
+        return super().names()
+
+    @deprecated_static_only(
+        "Deprecated since `altair=5.5.0`. Use @altair.theme.register instead.",
+        category=None,
+    )
+    def register(
+        self, name: str, value: Plugin[ThemeConfig] | None
+    ) -> Plugin[ThemeConfig] | None:
+        return super().register(name, value)
 
 
-@_overload
-def __getattr__(name: Literal["active"]) -> str: ...  # type: ignore[misc]
-@_overload
-def __getattr__(name: Literal["options"]) -> dict[str, Any]: ...  # type: ignore[misc]
-def __getattr__(name: str) -> Any:
-    if name == "active":
-        return _themes.active
-    elif name == "options":
-        return _themes.options
-    else:
-        msg = f"module {__name__!r} has no attribute {name!r}"
-        raise AttributeError(msg)
+class VegaTheme:
+    """Implementation of a builtin vega theme."""
+
+    def __init__(self, theme: str) -> None:
+        self.theme = theme
+
+    def __call__(self) -> ThemeConfig:
+        return {
+            "usermeta": {"embedOptions": {"theme": self.theme}},
+            "config": {"view": {"continuousWidth": 300, "continuousHeight": 300}},
+        }
+
+    def __repr__(self) -> str:
+        return f"VegaTheme({self.theme!r})"
 
 
-def _register(
-    name: LiteralString, fn: Plugin[ThemeConfig] | None, /
-) -> Plugin[ThemeConfig] | None:
-    if fn is None:
-        return _themes._plugins.pop(name, None)
-    elif _themes.plugin_type(fn):
-        _themes._plugins[name] = fn
-        return fn
-    else:
-        msg = f"{type(fn).__name__!r} is not a callable theme\n\n{fn!r}"
-        raise TypeError(msg)
+# The entry point group that can be used by other packages to declare other
+# themes that will be auto-detected. Explicit registration is also
+# allowed by the PluginRegistry API.
+ENTRY_POINT_GROUP: Final = "altair.vegalite.v6.theme"
+
+# NOTE: `themes` def has an entry point group
+themes = ThemeRegistry(entry_point_group=ENTRY_POINT_GROUP)
+
+themes.register(
+    "default",
+    lambda: {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}}},
+)
+themes.register(
+    "opaque",
+    lambda: {
+        "config": {
+            "background": "white",
+            "view": {"continuousWidth": 300, "continuousHeight": 300},
+        }
+    },
+)
+themes.register("none", ThemeConfig)
+
+for theme in VEGA_THEMES:
+    themes.register(theme, VegaTheme(theme))
+
+themes.enable("default")
