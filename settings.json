@@ -1,0 +1,10 @@
+{
+    "python.defaultInterpreterPath": "c:/Users/sksha/OneDrive/Desktop/Buisiness_Intelligence/venv/Scripts/python.exe",
+    "python.analysis.extraPaths": [
+        "c:/Users/sksha/OneDrive/Desktop/Buisiness_Intelligence/venv/Lib/site-packages"
+    ],
+    "python.analysis.autoSearchPaths": true,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.typeCheckingMode": "basic"
+}
+
